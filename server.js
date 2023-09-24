@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 5000;
 const cookieParser = require('cookie-parser')
 const mongoose = require('mongoose')
 const connectDB = require('./config/dbConfig')
-const registerRoute = require('./route/registerRoute')
+const tour = require('./route/tourRoute')
 const blogRoute = require('./route/blogRoute')
 // connect to mongoDB
 connectDB();
@@ -26,8 +26,7 @@ app.use(cookieParser());
 
 
 // routes
-app.use('/api', registerRoute)
-app.use('/api/blogs', blogRoute)
+app.use('/api/tours', tour)
 
 
 mongoose.connection.once('open', () => {
