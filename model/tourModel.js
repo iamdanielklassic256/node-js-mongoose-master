@@ -6,10 +6,10 @@ const validator = require('validator');
 const tourSchema = new mongoose.Schema({
 	name: {
 		type: String,
-		required: [true, 'A tour must have a number'],
+		required: [true, 'A tour must have a name'],
 		unique: true,
 		trim: true,
-		validate: [validator.isAlpha, 'Tour name must contain only character']
+		// validate: [validator.isAlpha, 'Tour name must contain only character']
 	},
 	slug: {
 		type: String
@@ -73,7 +73,37 @@ const tourSchema = new mongoose.Schema({
 	secretTour: {
 		type: Boolean,
 		default: false
-	}
+	},
+	startLocation: {
+		// GeoJSON
+		type: {
+			type: String,
+			default: 'Point',
+			enum: ['Point']
+		},
+		coordinates: [Number],
+		address: String,
+		description: String
+	},
+	location: [
+		{
+			type: {
+				type: String,
+				default: 'Point',
+				enum: ['Point'],
+			},
+			coordinates: [Number],
+			address: String,
+			description: String,
+			day: Number
+		}
+	],
+	guides: [
+		{
+			type: mongoose.Schema.ObjectId,
+			ref: 'User'
+		}
+	]
 }, {
 	toJSON: {
 		virtuals: true
@@ -85,6 +115,13 @@ const tourSchema = new mongoose.Schema({
 tourSchema.virtual('durationweeks').get(function () {
 	return this.duration / 7
 })
+// Virtual populate
+tourSchema.virtual('reviews', {
+	ref: 'Review',
+	foreignField: 'tour',
+	localField: '_id'
+  });
+  
 // DOCUMENT MIDDLEWARE -run before .save() and .create() commads
 tourSchema.pre('save', function (next) {
 	this.slug = slugify(this.name, { lower: true })
@@ -101,11 +138,19 @@ tourSchema.pre(/^find/, function (next) {
 	this.start = Date.now()
 	next()
 })
+tourSchema.pre(/^find/, async function (next) {
+	this.populate({
+		path: 'guides',
+		select: '-__v -passwordResetExpires -passwordResetToken -passwordChangedAt'
+	})
+	next()
+})
 tourSchema.post(/^find/, function (docs, next) {
 	console.log(`Query took ${Date.now() - this.start} miliseconds`)
 	console.log(docs)
 	next()
 })
+
 // AGGREGATE MIDDLEWARE
 tourSchema.pre('aggregate', function (next) {
 	this.pipeline().unshift({ $match: { $secretTour: { $ne: true } } })

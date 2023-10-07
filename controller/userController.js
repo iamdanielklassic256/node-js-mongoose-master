@@ -1,93 +1,71 @@
-const User = require('../model/userModel');
-const mongoose = require('mongoose');
+const User = require('../model/userModel')
+const APIFeatures = require('../utils/apiFeatures')
+const AppError = require('../utils/appError')
+const { catchAsync } = require('../utils/catchAsync')
 
-const registerUser = async (req, res) => {
-	try {
-		const { name, email } = req.body;
-
-		// Check if the user already exists
-		const existingUser = await User.findOne({ email });
-		if (existingUser) {
-			return res.status(409).json({ message: 'User already exists' });
-		}
-
-		// Create a new user instance
-		const user = new User({ name, email });
-
-		// Save the user to the database
-		await user.save();
-
-		res.status(201).json({ message: 'User registered successfully' });
-	} catch (error) {
-		res.status(500).json({ message: 'Something went wrong', error });
-	}
-};
-
-const getAllUsers = async (req, res) => {
-	try {
-		const users = await User.find().sort({ createdAt: -1 });
-		const userCount = await User.countDocuments();
-
-		res.status(200).json({ count: userCount, users });
-	} catch (error) {
-		res.status(500).json({ message: 'Something went wrong', error });
-	}
-};
-
-const getUser = async (req, res) => {
-	try {
-		const userId = req.params.id;
-
-		const user = await User.findById(userId);
-
-		if (!user) {
-			return res.status(404).json({ message: 'User not found' });
-		}
-
-		res.status(200).json(user);
-	} catch (error) {
-		res.status(500).json({ message: 'Something went wrong', error });
-	}
-}
-const updateUser = async (req, res) => {
-	try {
-		const userId = req.params.id;
-		const update = req.body;
-
-		// Find the user by ID and update the specified field
-		const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
-
-		if (!updatedUser) {
-			return res.status(404).json({ message: 'User not found' });
-		}
-
-		res.status(200).json(updatedUser);
-	} catch (error) {
-		res.status(500).json({ message: 'Something went wrong', error });
-	}
+const filterObj = (obj, ...allowedFields) => {
+	const newObj = {}
+	Object.keys(obj).forEach(el => {
+		if (allowedFields.includes(el)) newObj[el] = obj[el]
+	})
 }
 
-const deleteUser = async (req, res) => {
-	try {
-		const userId = req.params.id;
+exports.getAllUsers = catchAsync(async (req, res, next) => {
+	// Execute the query to find all users
+	const users = await User.find();
+  
+	// Send the users as a response
+	res.status(200).json({
+	  status: 'success',
+	  data: {
+		users,
+	  },
+	});
+  });
 
-		// Find the user by ID and delete it
-		const deletedUser = await User.findByIdAndDelete(userId);
+exports.updateMe = catchAsync(async (req, res, next) => {
+	// Create error if user post a new password data
+	if (req.body.password || req.body.confirmPassword) {
+		return next(new AppError('This is not for password update, Pleaseuse updatePassword route', 400))
+	}
+	// filter out the unwanted fields name that are not allowed to be updated
+	const filteredBody = filterObj(req.body, 'name', 'email')
+	// Update the user document
+	const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+		new: true, runValidators: true
+	})
 
-		if (!deletedUser) {
-			return res.status(404).json({ message: 'User not found' });
+	res.status(200).json({
+		status: 'success',
+		data: {
+			user: updatedUser
 		}
 
-		res.status(200).json({ message: 'User deleted successfully' });
-	} catch (error) {
-		res.status(500).json({ message: 'Something went wrong', error });
-	}
-}
+	})
+})
+exports.deleteMe = catchAsync(async (req, res, next) => {
+	await User.findByIdAndUpdate(req.user.id, { active: false })
+	res.status(204).json({
+		status: 'success',
+		data: null
+	})
+})
 
-module.exports = {
-	registerUser,
-	getAllUsers,
-	getUser,
-	updateUser,
-	deleteUser
-};
+exports.getUser = async (req, res) => {
+	res.status(500).json({
+		status: 'error',
+		message: 'Aint defined'
+	})
+}
+exports.updateUser = async (req, res) => {
+	res.status(500).json({
+		status: 'error',
+		message: 'Aint defined'
+	})
+}
+exports.deleteUser = async (req, res) => {
+	res.status(500).json({
+		status: 'error',
+		message: 'Aint defined'
+	})
+}
