@@ -69,7 +69,7 @@ app.use(cookieParser());
 app.use('/auth', user)
 app.use('/api/users', users)
 app.use('/api/tours', tour)
-app.use('/api/tours/reviews', review)
+app.use('/api/reviews', review)
 
 
 app.all('*', (req, res, next) => {

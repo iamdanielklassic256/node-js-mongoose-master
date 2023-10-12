@@ -2,6 +2,7 @@ const User = require('../model/userModel')
 const APIFeatures = require('../utils/apiFeatures')
 const AppError = require('../utils/appError')
 const { catchAsync } = require('../utils/catchAsync')
+const factory = require('./handlerFactory')
 
 const filterObj = (obj, ...allowedFields) => {
 	const newObj = {}
@@ -9,19 +10,15 @@ const filterObj = (obj, ...allowedFields) => {
 		if (allowedFields.includes(el)) newObj[el] = obj[el]
 	})
 }
+exports.getMe = (req, res, next) => {
+	req.params.id = req.user.id;
+	next()
+}
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-	// Execute the query to find all users
-	const users = await User.find();
-  
-	// Send the users as a response
-	res.status(200).json({
-	  status: 'success',
-	  data: {
-		users,
-	  },
-	});
-  });
+exports.getAllUsers = factory.getAll(User)
+exports.getUser = factory.getOne(User)
+exports.updateUser = factory.updateOne(User)
+exports.deleteUser = factory.deleteOne(User)
 
 exports.updateMe = catchAsync(async (req, res, next) => {
 	// Create error if user post a new password data
@@ -51,21 +48,3 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 	})
 })
 
-exports.getUser = async (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'Aint defined'
-	})
-}
-exports.updateUser = async (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'Aint defined'
-	})
-}
-exports.deleteUser = async (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'Aint defined'
-	})
-}
